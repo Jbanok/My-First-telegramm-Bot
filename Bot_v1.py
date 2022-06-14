@@ -1,61 +1,23 @@
-from telegram import Update
-from telegram import Bot
-from telegram import KeyboardButton
-from telegram import ReplyKeyboardMarkup
-from telegram import ReplyKeyboardRemove
-from telegram.ext import CallbackContext
-from telegram.ext import Updater              #Подключаю библеотек
-from telegram.ext import Filters
-from telegram.ext import MessageHandler
-from telegram.utils.request import Request
+from aiogram import Bot, types
+from aiogram.dispatcher import Dispatcher
+from aiogram.utils import executor
 
+from setings import token
 
-button_help = 'Помощь'
+bot = Bot(token=token)
+dp = Dispatcher(bot)
 
-def button_help_handler(update: Update, context: CallbackContext):  #Функция отвечающая на нажатие кнопки
-    update.message.reply_text(
-        text='Это Помощь',
-        reply_markup=ReplyKeyboardRemove(),
-    )
+@dp.message_handler(commands=['start'])
+async def process_start_command(message: types.Message):
+    await message.reply("Привет!\nНапиши мне что-нибудь!")
 
-def message_handler(update: Update, context: CallbackContext):   #Функция отвечающая на сообщения
-    text = update.message.text
-    if text == button_help:
-        return button_help_handler(update=update, context=context)
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(button_help),                                 #Добавляю кнопку
-            ],
-        ],
-        resize_keyboard=True,                                    #Если понадобится изменить размер , то он подсьроится
-    )
-    update.message.reply_text(
-        text='Жми кнопку!',
-        reply_markup=reply_markup
-    )
+@dp.message_handler(commands=['help'])
+async def process_help_command(message: types.Message):
+    await message.reply("Напиши мне что-нибудь, и я отпрпавлю этот текст тебе в ответ!")
 
-def main():
-    print('Start')
-    red = Request(
-        connect_timeout=0.5,
-    )
-    bot = Bot(                                                   #Конструкция , которя делает запрос
-        request=red,
-        token='5479031251:AAEKmIniuGcV4fT0w2MNBD83QN2vdp41VHg',  # Ввожу токен созданого бота(из ботфазера)
-    )
-    updater = Updater(                                           #Конструкция , которая ходит в тг за обновлениями
-        bot=bot,
-        use_context=True,
-    )
-    print(updater.bot.get_me())
-
-    updater.dispatcher.add_handler(MessageHandler(filters=Filters.all, callback=message_handler))
-
-    updater.start_polling()          #Обновления
-    updater.idle()             #Остановка обновлений после одного раза
-    print('Finish')
+@dp.message_handler()
+async def echo_message(msg: types.Message):
+    await bot.send_message(msg.from_user.id, msg.text)
 
 if __name__ == '__main__':
-    main()
-
+    executor.start_polling(dp)
